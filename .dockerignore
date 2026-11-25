@@ -1,0 +1,9 @@
+# Only what the image build needs; a login or token can never get in.
+*
+!go.mod
+!go.sum
+!cmd
+!internal
+**/*.log
+**/.env*
+**/auth.json

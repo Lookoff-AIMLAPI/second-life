@@ -1,0 +1,28 @@
+# Sign in once:   docker compose run --rm slife login --device
+# Start:          docker compose up -d
+# Local bearer:   docker compose exec slife cat /data/slife/token
+#
+# The container keeps its own Codex login in the volume. Never mount the host ~/.codex:
+# two copies of one login would refresh each other's token away.
+name: second-life
+
+services:
+  slife:
+    image: second-life:local
+    build:
+      context: .
+      args:
+        VERSION: ${VERSION:-0.0.0-dev}
+    init: true
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8787:8787"
+    volumes:
+      - data:/data
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  data:
