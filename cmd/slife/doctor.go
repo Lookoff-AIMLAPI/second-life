@@ -36,6 +36,9 @@ func doctor(w io.Writer) error {
 	if err != nil {
 		return err
 	}
+	if err := bridge.Adopt(home); err != nil {
+		add("settings of the former name", false, err.Error(), "")
+	}
 	cfg, err := route.Load(home)
 	if err != nil {
 		add("models", false, err.Error(), "")

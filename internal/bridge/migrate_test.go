@@ -41,6 +41,22 @@ func TestAdopt(t *testing.T) {
 	if b, _ := os.ReadFile(filepath.Join(old, "token")); string(b) != "tok" {
 		t.Error("the old folder changed")
 	}
+	// The folder is there already, made by another command, with the owner's own models.
+	if err := os.RemoveAll(home); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(home, "logs"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	_ = os.WriteFile(filepath.Join(home, "models.json"), []byte("mine"), 0o600)
+	if err := adopt(home); err != nil {
+		t.Fatal(err)
+	}
+	for n, s := range map[string]string{"token": "tok", "models.json": "mine", "aimlapi-key": "k"} {
+		if b, err := os.ReadFile(filepath.Join(home, n)); err != nil || string(b) != s {
+			t.Error("folder made first:", n, string(b), err)
+		}
+	}
 	// Once only: what the owner changed since then stays.
 	_ = os.WriteFile(filepath.Join(home, "token"), []byte("new"), 0o600)
 	if err := adopt(home); err != nil {
@@ -69,5 +85,28 @@ func TestAdoptRefusesLinks(t *testing.T) {
 	}
 	if _, err := os.Lstat(home); err == nil {
 		t.Error("left half a folder")
+	}
+}
+
+func TestNewAdoptsWithItsOwnToken(t *testing.T) {
+	t.Setenv("SLIFE_HOME", "")
+	root := t.TempDir()
+	home, old := filepath.Join(root, ".second-life"), filepath.Join(root, formerHome)
+	for _, d := range []string{home, old} {
+		if err := os.Mkdir(d, 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	want := NewToken()
+	if err := os.WriteFile(filepath.Join(old, "token"), []byte(want), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	b, err := New(Options{Home: home, Token: NewToken(), Auth: &fakeAuth{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(b.Stop)
+	if got, err := LocalToken(home); err != nil || got != want {
+		t.Error("the key did not carry over", err)
 	}
 }

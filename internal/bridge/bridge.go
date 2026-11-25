@@ -88,6 +88,9 @@ func New(o Options) (*Bridge, error) {
 		}
 		home = h
 	}
+	if err := Adopt(home); err != nil {
+		return nil, err
+	}
 	tok := o.Token
 	if tok == "" {
 		t, err := LocalToken(home)

@@ -50,10 +50,8 @@ func Addr() string {
 
 // LocalToken reads the bearer, creating it once with 0600.
 func LocalToken(home string) (string, error) {
-	if filepath.Base(home) == ".second-life" {
-		if err := adopt(home); err != nil {
-			return "", err
-		}
+	if err := Adopt(home); err != nil {
+		return "", err
 	}
 	if err := os.MkdirAll(home, 0o700); err != nil {
 		return "", err
