@@ -135,6 +135,10 @@ Set up Claude Desktop lets Claude's tools open every website in that mode, becau
 
 Go 1.27. `make check` runs the tests. `UNIVERSAL=1 VERSION=X.Y.Z packaging/mac/build.sh` makes the app, the DMG, the zip and `install.sh` in `dist`. `go test -tags live ./internal/bridge` calls real models and spends your limits.
 
+## Help
+
+Bugs and ideas: [issues](https://github.com/Lookoff-AIMLAPI/second-life/issues/new/choose). Security problems: [SECURITY.md](SECURITY.md). Changes to the code: [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## License
 
 [MIT](LICENSE). [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) lists the parts by others.

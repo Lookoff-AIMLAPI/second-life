@@ -48,6 +48,7 @@ type Bridge struct {
 	addr, upstream, token string
 	auth                  Auth
 	log                   *log.Logger
+	logFile               io.Closer
 	client                *http.Client
 
 	guard contextGuard
@@ -109,6 +110,7 @@ func New(o Options) (*Bridge, error) {
 	}
 	if b.log == nil {
 		b.log = openLog(home)
+		b.logFile, _ = b.log.Writer().(io.Closer)
 		if o.Echo != nil {
 			b.log.SetOutput(io.MultiWriter(o.Echo, b.log.Writer()))
 		}
@@ -206,6 +208,9 @@ func (b *Bridge) Start() error {
 func (b *Bridge) Stop() {
 	b.ops.Lock()
 	defer b.ops.Unlock()
+	if b.logFile != nil {
+		defer b.logFile.Close()
+	}
 	b.mu.Lock()
 	srv, cancel := b.srv, b.cancel
 	b.srv, b.run, b.cancel = nil, nil, nil

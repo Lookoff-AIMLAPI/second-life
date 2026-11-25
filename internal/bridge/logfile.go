@@ -29,6 +29,18 @@ func openLog(home string) *log.Logger {
 	return log.New(&logFile{path: p}, "", log.LstdFlags|log.Lmicroseconds)
 }
 
+// Close lets go of the file; the next line opens it again. Windows cannot delete an open file.
+func (l *logFile) Close() error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.f == nil {
+		return nil
+	}
+	err := l.f.Close()
+	l.f = nil
+	return err
+}
+
 func (l *logFile) Write(b []byte) (int, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()

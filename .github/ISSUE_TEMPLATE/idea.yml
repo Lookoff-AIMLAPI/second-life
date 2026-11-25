@@ -1,0 +1,11 @@
+name: Idea
+description: Something you need and do not have
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What you want to do
+      description: The task and what stops you now.
+    validations:
+      required: true

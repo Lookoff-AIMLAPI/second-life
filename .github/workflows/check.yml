@@ -1,6 +1,6 @@
 name: check
 
-# Hosted runners cost money: pull requests only, no push trigger.
+# Pull requests only; releases run their own tests.
 on:
   pull_request:
 

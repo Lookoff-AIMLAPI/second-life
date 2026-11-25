@@ -146,6 +146,7 @@ func TestEcho(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(b.Stop)
 	b.log.Print("line")
 	file, _ := os.ReadFile(LogPath(home))
 	if !strings.Contains(out.String(), "line") || string(file) != out.String() {
