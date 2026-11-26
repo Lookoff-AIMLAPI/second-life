@@ -56,7 +56,8 @@ func (f *fake) Login() (string, error) {
 
 func (f *fake) Token() string { return "demo-key" }
 
-func (f *fake) PickerURL() string { return "http://127.0.0.1:8787/picker/#x" }
+func (f *fake) PickerURL() string  { return "http://127.0.0.1:8787/picker/#x" }
+func (f *fake) PluginsURL() string { return "http://127.0.0.1:8787/picker/plugins#x" }
 
 func (f *fake) SetDesktop(func() bool, func() error) {}
 

@@ -33,6 +33,8 @@ type fake struct {
 	epFault  error // of a list
 	keyFault error // of an endpoint key
 	asked    []ask
+
+	store PluginStore // nil: no plugin store
 }
 
 // ask is one list call with the key that would be sent.
@@ -75,6 +77,7 @@ func (f *fake) Test(_ context.Context, t route.Target) (int64, string, error) {
 	f.tested = t
 	return 12, "ok", f.fault
 }
+func (f *fake) Plugins() PluginStore    { return f.store }
 func (f *fake) DesktopConfigured() bool { return true }
 func (f *fake) ApplyDesktop() error     { f.applied++; return f.fault }
 func (f *fake) EndpointModels(_ context.Context, e route.Endpoint, key string) ([]Model, error) {
@@ -399,7 +402,8 @@ func TestPageHeaders(t *testing.T) {
 	anon := client{t: t, p: p}
 	for path, kind := range map[string]string{
 		"/picker/": "text/html; charset=utf-8", "/picker/app.js": "text/javascript; charset=utf-8",
-		"/picker/app.css": "text/css; charset=utf-8", "/picker/icon.svg": "image/svg+xml", "/picker/api/state": "application/json", "/picker/nope": "application/json",
+		"/picker/app.css": "text/css; charset=utf-8", "/picker/icon.svg": "image/svg+xml",
+		"/picker/plugins": "text/html; charset=utf-8", "/picker/plugins.js": "text/javascript; charset=utf-8", "/picker/api/state": "application/json", "/picker/nope": "application/json",
 	} {
 		cl := anon
 		if path == "/picker/api/state" {
@@ -584,5 +588,21 @@ func TestTestAndDesktop(t *testing.T) {
 	}
 	if w := c.do("POST", "/picker/api/desktop", `{"confirm":true}`); w.Code != 500 {
 		t.Fatal(w.Code)
+	}
+}
+
+func TestPageURL(t *testing.T) {
+	p := New(&fake{cfg: route.Default()})
+	u := p.PageURL("http://"+host, "plugins")
+	c, ok := strings.CutPrefix(u, "http://"+host+"/picker/plugins#")
+	if !ok || !regexp.MustCompile(`^[0-9a-f]{64}$`).MatchString(c) {
+		t.Fatal(u)
+	}
+	cl := client{t: t, p: p}
+	if w := cl.trade(c); w.Code != 200 {
+		t.Fatal("first use:", w.Code)
+	}
+	if w := cl.trade(c); w.Code != 401 {
+		t.Fatal("second use:", w.Code)
 	}
 }

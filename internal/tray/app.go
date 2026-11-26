@@ -313,9 +313,14 @@ func (a *app) applyDesktop() error {
 	return nil
 }
 
-func (a *app) pick() bool {
+func (a *app) pick() bool { return a.openPage(a.ctl.PickerURL) }
+
+func (a *app) plugins() bool { return a.openPage(a.ctl.PluginsURL) }
+
+// openPage opens a one-time link of the bridge's own pages.
+func (a *app) openPage(link func() string) bool {
 	return a.run(a.misc, func() error {
-		u := a.ctl.PickerURL()
+		u := link()
 		if !localURL(u) {
 			return errors.New("turn the bridge on first")
 		}

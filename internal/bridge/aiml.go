@@ -407,6 +407,14 @@ func (b *Bridge) PickerURL() string {
 	return b.picker.URL("http://" + b.Status().Addr)
 }
 
+// PluginsURL opens the plugins page once; empty while the bridge is off.
+func (b *Bridge) PluginsURL() string {
+	if b.Status().State == StateOff {
+		return ""
+	}
+	return b.picker.PageURL("http://"+b.Status().Addr, "plugins")
+}
+
 // drainMessages reads a whole Anthropic answer and says whether it ended well.
 func drainMessages(r io.Reader) error {
 	m := aimlapi.NewMeter()

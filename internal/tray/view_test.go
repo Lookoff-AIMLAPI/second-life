@@ -279,3 +279,18 @@ func TestAIMLAPIOnlyView(t *testing.T) {
 		t.Errorf("%+v", v.Items)
 	}
 }
+
+func TestPluginsItem(t *testing.T) {
+	if itemPlugins != itemMCP+1 {
+		t.Error("Plugins does not follow Import MCP servers")
+	}
+	for state, enabled := range map[bridge.State]bool{bridge.StateOn: true, bridge.StateNeedsLogin: true, bridge.StateOff: false, bridge.StateError: false} {
+		v := buildView(snapshot{Status: bridge.Status{State: state}}, now)
+		if got := v.Items[itemPlugins]; got != (entry{Title: "Plugins...", Visible: true, Enabled: enabled}) {
+			t.Errorf("%q: %+v", state, got)
+		}
+		if v.Items[itemPlugins].Enabled != v.Items[itemPick].Enabled {
+			t.Errorf("%q: not enabled like Choose models", state)
+		}
+	}
+}

@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -149,5 +150,22 @@ func TestPickerIsMountedAndLocked(t *testing.T) {
 	b.update(func(st *Status) { st.State = StateOn; st.Addr = "127.0.0.1:1" })
 	if u := b.PickerURL(); !strings.HasPrefix(u, "http://127.0.0.1:1/picker/#") {
 		t.Error(u)
+	}
+}
+
+func TestPluginsLinkAndStore(t *testing.T) {
+	b, s, _, _ := setup(t, answer)
+	if b.PluginsURL() != "" {
+		t.Error("a link while off")
+	}
+	b.update(func(st *Status) { st.State = StateOn; st.Addr = "127.0.0.1:1" })
+	if u := b.PluginsURL(); !regexp.MustCompile(`^http://127\.0\.0\.1:1/picker/plugins#[0-9a-f]{64}$`).MatchString(u) {
+		t.Error(u)
+	}
+	if (pickerDeps{b}).Plugins() == nil {
+		t.Error("no plugin store")
+	}
+	if r, _ := http.Get(s.URL + "/picker/api/plugins"); r.StatusCode < 400 {
+		t.Error("plugins without sign-in:", r.StatusCode)
 	}
 }

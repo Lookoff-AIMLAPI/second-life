@@ -26,7 +26,8 @@ type Controller interface {
 	Status() bridge.Status
 	Login() (string, error)
 	Mapping() [][2]string
-	PickerURL() string // a one-time link to the model picker, empty while off
+	PickerURL() string  // a one-time link to the model picker, empty while off
+	PluginsURL() string // the same to the plugins page
 	SetDesktop(configured func() bool, apply func() error)
 	Token() string // the local bearer; only ever copied to the clipboard
 }
@@ -103,6 +104,7 @@ func (a *app) listen(m *menu) {
 	on(itemInstall, func() { a.install() })
 	on(itemClaude, func() { a.claude() })
 	on(itemMCP, func() { a.importMCP() })
+	on(itemPlugins, func() { a.plugins() })
 	on(itemDesktop, func() { a.setupDesktop() })
 	on(itemDesktopBack, func() { a.leaveDesktop() })
 	on(itemLog, func() { a.openLog() })

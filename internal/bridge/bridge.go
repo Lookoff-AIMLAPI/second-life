@@ -16,6 +16,7 @@ import (
 	"github.com/Lookoff-AIMLAPI/second-life/internal/codex"
 	"github.com/Lookoff-AIMLAPI/second-life/internal/keystore"
 	"github.com/Lookoff-AIMLAPI/second-life/internal/picker"
+	"github.com/Lookoff-AIMLAPI/second-life/internal/plugins"
 	"github.com/Lookoff-AIMLAPI/second-life/internal/route"
 )
 
@@ -53,12 +54,13 @@ type Bridge struct {
 
 	guard contextGuard
 
-	kick   chan struct{} // look at the login and the key again now
-	home   string
-	routes atomic.Pointer[route.Config]
-	aiml   *aimlapi.Client
-	keys   *cachedKeys
-	picker *picker.Picker
+	kick    chan struct{} // look at the login and the key again now
+	home    string
+	routes  atomic.Pointer[route.Config]
+	aiml    *aimlapi.Client
+	keys    *cachedKeys
+	picker  *picker.Picker
+	plugins *plugins.Runner
 
 	learned sync.Map // learnKey -> translate.Options
 	newKeys func(id string) Keys
@@ -142,6 +144,7 @@ func New(o Options) (*Bridge, error) {
 	if b.aiml.BaseURL == "" {
 		b.aiml.BaseURL = aimlapi.DefaultBaseURL
 	}
+	b.plugins = plugins.Here()
 	b.picker = picker.New(pickerDeps{b})
 	return b, nil
 }

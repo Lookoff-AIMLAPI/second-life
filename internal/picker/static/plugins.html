@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Plugins · Second Life</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="app.css">
+<script src="plugins.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <img src="icon.svg" alt="" width="40" height="40">
+  <div>
+    <nav class="pages" aria-label="Pages"><a href="./">Models</a> <a href="plugins" aria-current="page">Plugins</a></nav>
+    <h1>Add tools to Claude</h1>
+    <p>Plugins add skills and connections to services. They are installed for Claude Code and the Code tab of Claude Desktop.</p>
+    <p id="where" class="quiet small"></p>
+  </div>
+</header>
+<main id="main">
+  <div id="alerts" role="alert"></div>
+  <p id="loading" class="quiet">Loading the plugins…</p>
+  <noscript><p class="notice">This page needs JavaScript.</p></noscript>
+</main>
+<div id="say" class="unseen" role="status" aria-live="polite"></div>
+<dialog id="ask" aria-labelledby="ask-title" aria-describedby="ask-text"></dialog>
+</body>
+</html>

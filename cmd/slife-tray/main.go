@@ -31,6 +31,7 @@ func (e broken) Login() (string, error)               { return "", errors.New(st
 func (e broken) Token() string                        { return "" }
 func (e broken) Mapping() [][2]string                 { return nil }
 func (e broken) PickerURL() string                    { return "" }
+func (e broken) PluginsURL() string                   { return "" }
 func (e broken) SetDesktop(func() bool, func() error) {}
 func (e broken) Status() bridge.Status {
 	return bridge.Status{State: bridge.StateError, LastError: string(e)}

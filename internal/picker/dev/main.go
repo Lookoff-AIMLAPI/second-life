@@ -4,7 +4,8 @@
 // Open /dev/open to sign in. /dev/set?models=ok|fail|empty|slow&key=none|bad|ok&save=ok|fail&test=ok|fail|slow&desktop=on|off|fail
 // changes what the fakes answer. &keystore=fail refuses endpoint keys, &list=fail|slow changes every endpoint list. An
 // endpoint whose address has "fail", "nolist", "empty", "slow", "evil" or "keyed" in it answers so. /dev/asked shows which
-// addresses were asked and with which key.
+// addresses were asked and with which key. /dev/plugins opens the plugins page; plugins=noclaude|old, official=no and
+// install=busy|terminal|fail|slow change what the plugin store answers. SLIFE_REAL_PLUGINS=1 uses the real claude instead.
 package main
 
 import (
@@ -13,11 +14,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/Lookoff-AIMLAPI/second-life/internal/picker"
+	"github.com/Lookoff-AIMLAPI/second-life/internal/plugins"
 	"github.com/Lookoff-AIMLAPI/second-life/internal/route"
 )
 
@@ -30,6 +33,8 @@ type fake struct {
 
 	keys  map[string]string
 	asked []string
+
+	store picker.PluginStore
 }
 
 func (f *fake) get(k string) string {
@@ -207,13 +212,97 @@ func models() []picker.Model {
 	return out
 }
 
+// store is a made-up plugin store with 4,099 plugins.
+type store struct {
+	f         *fake
+	mu        sync.Mutex
+	installed []plugins.Installed
+}
+
+func (f *fake) Plugins() picker.PluginStore { return f.store }
+
+func (s *store) Catalog(context.Context) (plugins.Catalog, error) {
+	switch s.f.get("plugins") {
+	case "noclaude":
+		return plugins.Catalog{}, plugins.ErrNoClaude
+	case "old":
+		return plugins.Catalog{}, plugins.ErrOldClaude
+	}
+	c := plugins.Catalog{ConfigDir: "/Users/someone/.claude", HasOfficial: s.f.get("official") != "no"}
+	s.mu.Lock()
+	c.Installed = append([]plugins.Installed{}, s.installed...)
+	s.mu.Unlock()
+	if c.HasOfficial {
+		c.Available = append(c.Available,
+			plugins.Plugin{ID: "linear@claude-plugins-official", Name: "linear", Description: "Linear issue tracking integration. Create issues, manage projects, update statuses.", Marketplace: "claude-plugins-official", SourceKind: "relative", Installs: 12873},
+			plugins.Plugin{ID: "context7@claude-plugins-official", Name: "context7", Description: "Up-to-date documentation lookup for libraries.", Marketplace: "claude-plugins-official", SourceKind: "relative", Installs: 40211},
+			plugins.Plugin{ID: "runner@claude-plugins-official", Name: "runner", Description: "Needs a command to be accepted.", Marketplace: "claude-plugins-official", SourceKind: "command"},
+			plugins.Plugin{ID: "evil@claude-plugins-official", Name: "<img src=x onerror=alert(1)>", Description: "<b>bold?</b> \u202eright-to-left", Marketplace: "claude-plugins-official", SourceKind: "relative"})
+		for i := range 312 {
+			c.Available = append(c.Available, plugins.Plugin{ID: fmt.Sprintf("official-%d@claude-plugins-official", i), Name: fmt.Sprintf("official-%d", i), Description: "An official plugin.", Marketplace: "claude-plugins-official", SourceKind: "git-subdir"})
+		}
+	}
+	for i := range 3783 {
+		c.Available = append(c.Available, plugins.Plugin{ID: fmt.Sprintf("dir-%d@anthropic-plugin-directory", i), Name: fmt.Sprintf("directory-%d", i), Description: "A plugin from the Directory.", Marketplace: "anthropic-plugin-directory", SourceKind: "git-subdir"})
+	}
+	return c, nil
+}
+
+func (s *store) Details(_ context.Context, id string) (string, error) {
+	return id + "\n\nComponent inventory\n  Skills (0)\n  MCP servers (1)  " + strings.Split(id, "@")[0], nil
+}
+
+func (s *store) Install(_ context.Context, id string) (plugins.Result, error) {
+	switch s.f.get("install") {
+	case "busy":
+		return plugins.Result{}, plugins.ErrBusy
+	case "terminal":
+		return plugins.Result{NeedsTerminal: "It needs settings first. In Terminal: claude plugin install " + id}, nil
+	case "fail":
+		return plugins.Result{}, errors.New("fatal: could not read from remote repository")
+	case "slow":
+		time.Sleep(4 * time.Second)
+	}
+	name := strings.Split(id, "@")[0]
+	servers := []string{}
+	if name == "linear" || name == "context7" {
+		servers = []string{name}
+	}
+	s.mu.Lock()
+	s.installed = append(s.installed, plugins.Installed{ID: id, Version: "1.0.0", Scope: "user", Enabled: true, MCPServers: servers})
+	s.mu.Unlock()
+	return plugins.Result{MCPServers: servers}, nil
+}
+
+func (s *store) Remove(_ context.Context, id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for i, p := range s.installed {
+		if p.ID == id {
+			s.installed = append(s.installed[:i], s.installed[i+1:]...)
+			return nil
+		}
+	}
+	return plugins.ErrUnknown
+}
+
+func (s *store) AddCatalog(context.Context) error    { s.f.put("official", ""); return nil }
+func (s *store) UpdateCatalog(context.Context) error { time.Sleep(time.Second); return nil }
+
 func main() {
 	f := &fake{cfg: route.Default(), set: map[string]string{}, keys: map[string]string{}}
+	f.store = &store{f: f, installed: []plugins.Installed{{ID: "superpowers@claude-plugins-official", Version: "7.0.2", Scope: "user", Enabled: true, MCPServers: []string{}}}}
+	if os.Getenv("SLIFE_REAL_PLUGINS") == "1" { // the real claude, in CLAUDE_CONFIG_DIR when that is set
+		f.store = plugins.Here()
+	}
 	p := picker.New(f)
 	mux := http.NewServeMux()
 	mux.Handle("/picker/", p.Handler())
 	mux.HandleFunc("/dev/open", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, p.URL("http://"+addr), http.StatusSeeOther)
+	})
+	mux.HandleFunc("/dev/plugins", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, p.PageURL("http://"+addr, "plugins"), http.StatusSeeOther)
 	})
 	mux.HandleFunc("/dev/set", func(w http.ResponseWriter, r *http.Request) {
 		for k, v := range r.URL.Query() {

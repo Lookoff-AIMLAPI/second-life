@@ -67,6 +67,9 @@ type Deps interface {
 	EndpointKey(id string) bool
 	SetEndpointKey(id, key string) error
 	DeleteEndpointKey(id string) error
+
+	// Plugins is nil when this build has no plugin store.
+	Plugins() PluginStore
 }
 
 //go:embed static
@@ -77,6 +80,9 @@ var pages = map[string]struct{ file, kind string }{
 	prefix + "app.js":   {"static/app.js", "text/javascript; charset=utf-8"},
 	prefix + "app.css":  {"static/app.css", "text/css; charset=utf-8"},
 	prefix + "icon.svg": {"static/icon.svg", "image/svg+xml"},
+
+	prefix + "plugins":    {"static/plugins.html", "text/html; charset=utf-8"},
+	prefix + "plugins.js": {"static/plugins.js", "text/javascript; charset=utf-8"},
 }
 
 // Picker serves the page. Codes and sessions live in memory, as hashes.
@@ -108,12 +114,20 @@ func New(d Deps) *Picker {
 		"endpoint":        {http.MethodPost: p.addEndpoint, http.MethodPut: p.editEndpoint, http.MethodDelete: p.deleteEndpoint},
 		"endpoint-key":    {http.MethodGet: p.keys, http.MethodDelete: p.deleteEndpointKey},
 		"endpoint-models": {http.MethodPost: p.endpointModels},
+
+		"plugins":        {http.MethodGet: p.pluginList},
+		"plugin":         {http.MethodPost: p.pluginInstall, http.MethodDelete: p.pluginRemove},
+		"plugin-details": {http.MethodPost: p.pluginDetails},
+		"catalog":        {http.MethodPost: p.catalogChange(true), http.MethodPut: p.catalogChange(false)},
 	}
 	return p
 }
 
-// URL is a link that signs one browser in, once, within a minute.
-func (p *Picker) URL(base string) string {
+// URL is a link to the models page that signs one browser in, once, within a minute.
+func (p *Picker) URL(base string) string { return p.PageURL(base, "") }
+
+// PageURL is the same link to another page of the picker, such as "plugins".
+func (p *Picker) PageURL(base, page string) string {
 	code := secret()
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -125,7 +139,7 @@ func (p *Picker) URL(base string) string {
 	}
 	trim(p.codes, maxCodes-1)
 	p.codes[sha256.Sum256([]byte(code))] = now.Add(codeLife)
-	return base + prefix + "#" + code
+	return base + prefix + page + "#" + code
 }
 
 // Handler serves everything under /picker/.
