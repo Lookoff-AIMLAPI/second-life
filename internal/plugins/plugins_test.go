@@ -318,8 +318,9 @@ func TestDetailsOnlyForInstalled(t *testing.T) {
 }
 
 func TestConfigDir(t *testing.T) {
-	t.Setenv("CLAUDE_CONFIG_DIR", "/x/y")
-	if got := configDir(); got != "/x/y" {
+	abs := filepath.Join(t.TempDir(), "claude") // "/x/y" is not absolute on Windows
+	t.Setenv("CLAUDE_CONFIG_DIR", abs)
+	if got := configDir(); got != abs {
 		t.Error(got)
 	}
 	t.Setenv("CLAUDE_CONFIG_DIR", "rel")
