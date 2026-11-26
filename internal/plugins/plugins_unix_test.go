@@ -5,7 +5,11 @@ package plugins
 import (
 	"context"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 )
@@ -14,6 +18,11 @@ import (
 func init() {
 	if os.Getenv("SLIFE_FAKE_CLAUDE") == "" {
 		return
+	}
+	if path := os.Getenv("SLIFE_FAKE_CHILD"); path != "" { // like claude starting git
+		child := exec.Command("sleep", "30")
+		_ = child.Start()
+		_ = os.WriteFile(path, []byte(strconv.Itoa(child.Process.Pid)), 0o600)
 	}
 	if d, err := time.ParseDuration(os.Getenv("SLIFE_FAKE_SLEEP")); err == nil {
 		time.Sleep(d)
@@ -67,5 +76,27 @@ func TestTimeout(t *testing.T) {
 	}
 	if time.Since(start) > 4*time.Second {
 		t.Error("the command was not stopped in time")
+	}
+}
+
+func TestTimeoutEndsWhatClaudeStarted(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "pid")
+	r := fakeClaude(t, "", "", "30s", "0")
+	t.Setenv("SLIFE_FAKE_CHILD", path)
+	r.Waits.Change = 500 * time.Millisecond
+	if err := r.UpdateCatalog(context.Background()); err == nil {
+		t.Fatal("no timeout")
+	}
+	b, err := os.ReadFile(path)
+	pid, _ := strconv.Atoi(string(b))
+	if err != nil || pid <= 0 {
+		t.Fatal("the fake did not start its child", err)
+	}
+	for i := 0; syscall.Kill(pid, 0) != syscall.ESRCH; i++ {
+		if i > 50 {
+			_ = syscall.Kill(pid, syscall.SIGKILL)
+			t.Fatal("the child of claude outlived the timeout")
+		}
+		time.Sleep(100 * time.Millisecond)
 	}
 }

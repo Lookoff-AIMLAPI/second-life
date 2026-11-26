@@ -327,3 +327,17 @@ func TestConfigDir(t *testing.T) {
 		t.Error(got)
 	}
 }
+
+func TestInstallFailureAfterWarning(t *testing.T) {
+	s := &script{catalog: catalogJSON, answers: map[string]answer{"install": {
+		out: "Warning: {cache} is stale\n" + `{"outcome":"failed","message":"Missing required userConfig option: api_key","failureCode":"config_required"}` + "\n",
+		err: errors.New("exit status 1")}}}
+	res, err := newRunner(s).Install(context.Background(), "linear@claude-plugins-official")
+	if err != nil || !strings.Contains(res.NeedsTerminal, "claude plugin install linear@claude-plugins-official") {
+		t.Fatal(res, err)
+	}
+	s.answers["install"] = answer{out: "Note: x\n" + `{"outcome":"failed","message":"Plugin \"linear\" not found"}`, err: errors.New("exit status 1")}
+	if _, err := newRunner(s).Install(context.Background(), "linear@claude-plugins-official"); err == nil || err.Error() != `Plugin "linear" not found` {
+		t.Fatal(err)
+	}
+}

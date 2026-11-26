@@ -137,23 +137,27 @@ type wireCatalog struct {
 	} `json:"available"`
 }
 
-// parseCatalog reads the first JSON object of the output; a line printed before it does not matter.
-func parseCatalog(out []byte) (Catalog, error) {
-	var w wireCatalog
-	i := bytes.IndexByte(out, '{')
-	for i >= 0 {
-		w = wireCatalog{}
-		if json.NewDecoder(bytes.NewReader(out[i:])).Decode(&w) == nil && (w.Installed != nil || w.Available != nil) {
-			break
+// firstObject decodes into v the first JSON object of out for which ok holds; a line printed before it does not matter.
+func firstObject[T any](out []byte, ok func(*T) bool) (T, bool) {
+	for i := bytes.IndexByte(out, '{'); i >= 0; {
+		var v T
+		if json.NewDecoder(bytes.NewReader(out[i:])).Decode(&v) == nil && ok(&v) {
+			return v, true
 		}
 		next := bytes.IndexByte(out[i+1:], '{')
 		if next < 0 {
-			i = -1
 			break
 		}
 		i += 1 + next
 	}
-	if i < 0 {
+	var zero T
+	return zero, false
+}
+
+// parseCatalog reads the lists out of what claude printed.
+func parseCatalog(out []byte) (Catalog, error) {
+	w, found := firstObject(out, func(w *wireCatalog) bool { return w.Installed != nil || w.Available != nil })
+	if !found {
 		return Catalog{}, ErrOldClaude
 	}
 	c := Catalog{ConfigDir: configDir(), Installed: []Installed{}, Available: []Plugin{}}
@@ -226,10 +230,8 @@ func (r *Runner) Install(ctx context.Context, id string) (Result, error) {
 	}
 	out, err := r.call(ctx, r.Waits.Change, "plugin", "install", id, "--scope", "user", "--json")
 	if err != nil {
-		var res struct {
-			Outcome, Message, FailureCode string
-		}
-		if json.Unmarshal(bytes.TrimSpace(out), &res) == nil && res.Outcome == "failed" && res.Message != "" {
+		type outcome struct{ Outcome, Message, FailureCode string }
+		if res, ok := firstObject(out, func(o *outcome) bool { return o.Outcome == "failed" && o.Message != "" }); ok {
 			if needsSettings(res.Message + " " + res.FailureCode) {
 				return Result{NeedsTerminal: "It needs settings first. " + terminal}, nil
 			}

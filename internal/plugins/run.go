@@ -42,10 +42,18 @@ func start(ctx context.Context, bin string, args ...string) ([]byte, error) {
 	var out, errs capped
 	cmd.Dir, cmd.Env, cmd.Stdout, cmd.Stderr = home, codex.ToolEnv(bin), &out, &errs
 	cmd.WaitDelay = 2 * time.Second // git, started by claude, may keep the pipes open
+	var tree codex.Tree             // a timeout must also end the git that claude started
+	tree.Prepare(cmd)
 	if err := cmd.Start(); err != nil {
 		return nil, errors.New("could not start Claude Code")
 	}
-	stop := context.AfterFunc(ctx, func() { _ = cmd.Process.Kill() })
+	if err := tree.Adopt(cmd); err != nil {
+		_ = cmd.Process.Kill()
+		_ = cmd.Wait()
+		return nil, errors.New("could not start Claude Code")
+	}
+	defer tree.Kill() // whatever it left behind
+	stop := context.AfterFunc(ctx, tree.Kill)
 	defer stop()
 	if err := cmd.Wait(); err != nil {
 		if ctx.Err() != nil {

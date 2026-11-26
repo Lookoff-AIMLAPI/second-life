@@ -116,6 +116,9 @@ func (p *Picker) pluginList(w http.ResponseWriter, r *http.Request) {
 	}
 	available := []wirePlugin{}
 	for _, a := range c.Available {
+		if !plugins.ValidID(a.ID) { // the page shows the id in a Terminal command
+			continue
+		}
 		name := text(a.Name, 100)
 		if name == "" {
 			name = text(a.ID, 100)
@@ -135,7 +138,7 @@ func (p *Picker) pluginInstall(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ctx, cancel := context.WithTimeout(r.Context(), changeWait)
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), changeWait) // a closed tab must not cut a change short
 	defer cancel()
 	res, err := s.Install(ctx, id)
 	if err != nil {
@@ -162,7 +165,7 @@ func (p *Picker) pluginRemove(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ctx, cancel := context.WithTimeout(r.Context(), changeWait)
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), changeWait) // a closed tab must not cut a change short
 	defer cancel()
 	if err := s.Remove(ctx, id); err != nil {
 		pluginFail(w, err)
@@ -219,7 +222,7 @@ func (p *Picker) catalogChange(add bool) http.HandlerFunc {
 		if !read(w, r, &in) {
 			return
 		}
-		ctx, cancel := context.WithTimeout(r.Context(), changeWait)
+		ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), changeWait) // a closed tab must not cut a change short
 		defer cancel()
 		run := s.UpdateCatalog
 		if add {
