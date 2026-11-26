@@ -80,6 +80,9 @@ var pages = map[string]struct{ file, kind string }{
 	prefix + "app.js":   {"static/app.js", "text/javascript; charset=utf-8"},
 	prefix + "app.css":  {"static/app.css", "text/css; charset=utf-8"},
 	prefix + "icon.svg": {"static/icon.svg", "image/svg+xml"},
+
+	prefix + "plugins":    {"static/plugins.html", "text/html; charset=utf-8"},
+	prefix + "plugins.js": {"static/plugins.js", "text/javascript; charset=utf-8"},
 }
 
 // Picker serves the page. Codes and sessions live in memory, as hashes.

@@ -402,7 +402,8 @@ func TestPageHeaders(t *testing.T) {
 	anon := client{t: t, p: p}
 	for path, kind := range map[string]string{
 		"/picker/": "text/html; charset=utf-8", "/picker/app.js": "text/javascript; charset=utf-8",
-		"/picker/app.css": "text/css; charset=utf-8", "/picker/icon.svg": "image/svg+xml", "/picker/api/state": "application/json", "/picker/nope": "application/json",
+		"/picker/app.css": "text/css; charset=utf-8", "/picker/icon.svg": "image/svg+xml",
+		"/picker/plugins": "text/html; charset=utf-8", "/picker/plugins.js": "text/javascript; charset=utf-8", "/picker/api/state": "application/json", "/picker/nope": "application/json",
 	} {
 		cl := anon
 		if path == "/picker/api/state" {
