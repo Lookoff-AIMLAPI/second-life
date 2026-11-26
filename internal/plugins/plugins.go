@@ -42,7 +42,7 @@ type Plugin struct {
 // Installed is a plugin Claude Code has.
 type Installed struct {
 	ID, Version string
-	Scope       string // "" for a plugin loaded only for a session
+	Scope       string // user, project or local; "" for a plugin loaded only for a session
 	Enabled     bool
 	MCPServers  []string // sorted names
 }
@@ -164,7 +164,11 @@ func parseCatalog(out []byte) (Catalog, error) {
 				servers = append(servers, name)
 			}
 			slices.Sort(servers)
-			c.Installed = append(c.Installed, Installed{p.ID, p.Version, p.Scope, p.Enabled, servers})
+			scope := p.Scope
+			if scope != "user" && scope != "project" && scope != "local" {
+				scope = "" // "session" and anything new: nothing to uninstall
+			}
+			c.Installed = append(c.Installed, Installed{p.ID, p.Version, scope, p.Enabled, servers})
 		}
 	}
 	if w.Available != nil {

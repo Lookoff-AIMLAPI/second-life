@@ -15,7 +15,7 @@ import (
 const catalogJSON = `{"installed":[
  {"id":"context7@claude-plugins-official","version":"0fbf","scope":"user","enabled":true,"mcpServers":{"context7":{"type":"http"},"b-second":{"type":"http"}}},
  {"id":"x@m","version":"1","scope":"project","enabled":true},
- {"id":"vesna@inline","version":"0.2.0","enabled":true}
+ {"id":"vesna@inline","version":"0.2.0","scope":"session","enabled":true,"installPath":"/x"}
 ],"available":[
  {"pluginId":"linear@claude-plugins-official","name":"linear","description":"Linear issues","marketplaceName":"claude-plugins-official","source":"./external_plugins/linear","installCount":42},
  {"pluginId":"design@anthropic-plugin-directory","name":"design","description":"Design work","marketplaceName":"anthropic-plugin-directory","version":"1.2.0","source":{"source":"git-subdir","url":"https://github.com/x/y","path":"design"}},

@@ -5,7 +5,7 @@
 // changes what the fakes answer. &keystore=fail refuses endpoint keys, &list=fail|slow changes every endpoint list. An
 // endpoint whose address has "fail", "nolist", "empty", "slow", "evil" or "keyed" in it answers so. /dev/asked shows which
 // addresses were asked and with which key. /dev/plugins opens the plugins page; plugins=noclaude|old, official=no and
-// install=busy|terminal|fail|slow change what the plugin store answers.
+// install=busy|terminal|fail|slow change what the plugin store answers. SLIFE_REAL_PLUGINS=1 uses the real claude instead.
 package main
 
 import (
@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -33,7 +34,7 @@ type fake struct {
 	keys  map[string]string
 	asked []string
 
-	store *store
+	store picker.PluginStore
 }
 
 func (f *fake) get(k string) string {
@@ -291,6 +292,9 @@ func (s *store) UpdateCatalog(context.Context) error { time.Sleep(time.Second); 
 func main() {
 	f := &fake{cfg: route.Default(), set: map[string]string{}, keys: map[string]string{}}
 	f.store = &store{f: f, installed: []plugins.Installed{{ID: "superpowers@claude-plugins-official", Version: "7.0.2", Scope: "user", Enabled: true, MCPServers: []string{}}}}
+	if os.Getenv("SLIFE_REAL_PLUGINS") == "1" { // the real claude, in CLAUDE_CONFIG_DIR when that is set
+		f.store = plugins.Here()
+	}
 	p := picker.New(f)
 	mux := http.NewServeMux()
 	mux.Handle("/picker/", p.Handler())

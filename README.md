@@ -75,6 +75,7 @@ The app has no window. Look for its icon in the menu bar, which says `On: 127.0.
 1. Choose models opens a page in your browser. Add keys and servers, pick a model for each name, press Test, then Save.
 2. Open Claude starts Claude Code in Terminal.
 3. Set up Claude Desktop switches it to this app. A window lists the changes first, and the old settings are backed up. Claude restarts. Switch Claude back to claude.ai returns to the usual mode.
+4. Plugins opens a page where you add skills and connections from Anthropic's catalog to Claude Code. After an install, type /mcp in Claude to sign in to the services it adds.
 
 Your usual chats are in Claude under Settings > Import & export > Import. The import copies the list once. Code chats share one transcript, so deleting an imported chat can delete the original.
 
