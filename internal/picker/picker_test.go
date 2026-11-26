@@ -589,3 +589,19 @@ func TestTestAndDesktop(t *testing.T) {
 		t.Fatal(w.Code)
 	}
 }
+
+func TestPageURL(t *testing.T) {
+	p := New(&fake{cfg: route.Default()})
+	u := p.PageURL("http://"+host, "plugins")
+	c, ok := strings.CutPrefix(u, "http://"+host+"/picker/plugins#")
+	if !ok || !regexp.MustCompile(`^[0-9a-f]{64}$`).MatchString(c) {
+		t.Fatal(u)
+	}
+	cl := client{t: t, p: p}
+	if w := cl.trade(c); w.Code != 200 {
+		t.Fatal("first use:", w.Code)
+	}
+	if w := cl.trade(c); w.Code != 401 {
+		t.Fatal("second use:", w.Code)
+	}
+}

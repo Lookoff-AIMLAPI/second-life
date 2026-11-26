@@ -18,5 +18,10 @@ func (d pickerDeps) AIMLAPIModels(ctx context.Context) ([]picker.Model, error) {
 	return out, err
 }
 
-// Plugins is the plugin store; nil until the bridge has a runner.
-func (d pickerDeps) Plugins() picker.PluginStore { return nil }
+// Plugins is the plugin store. A nil runner must stay a nil interface.
+func (d pickerDeps) Plugins() picker.PluginStore {
+	if d.plugins == nil {
+		return nil
+	}
+	return d.plugins
+}

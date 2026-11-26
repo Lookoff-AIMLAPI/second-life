@@ -120,8 +120,11 @@ func New(d Deps) *Picker {
 	return p
 }
 
-// URL is a link that signs one browser in, once, within a minute.
-func (p *Picker) URL(base string) string {
+// URL is a link to the models page that signs one browser in, once, within a minute.
+func (p *Picker) URL(base string) string { return p.PageURL(base, "") }
+
+// PageURL is the same link to another page of the picker, such as "plugins".
+func (p *Picker) PageURL(base, page string) string {
 	code := secret()
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -133,7 +136,7 @@ func (p *Picker) URL(base string) string {
 	}
 	trim(p.codes, maxCodes-1)
 	p.codes[sha256.Sum256([]byte(code))] = now.Add(codeLife)
-	return base + prefix + "#" + code
+	return base + prefix + page + "#" + code
 }
 
 // Handler serves everything under /picker/.
