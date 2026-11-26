@@ -67,6 +67,9 @@ type Deps interface {
 	EndpointKey(id string) bool
 	SetEndpointKey(id, key string) error
 	DeleteEndpointKey(id string) error
+
+	// Plugins is nil when this build has no plugin store.
+	Plugins() PluginStore
 }
 
 //go:embed static
@@ -108,6 +111,11 @@ func New(d Deps) *Picker {
 		"endpoint":        {http.MethodPost: p.addEndpoint, http.MethodPut: p.editEndpoint, http.MethodDelete: p.deleteEndpoint},
 		"endpoint-key":    {http.MethodGet: p.keys, http.MethodDelete: p.deleteEndpointKey},
 		"endpoint-models": {http.MethodPost: p.endpointModels},
+
+		"plugins":        {http.MethodGet: p.pluginList},
+		"plugin":         {http.MethodPost: p.pluginInstall, http.MethodDelete: p.pluginRemove},
+		"plugin-details": {http.MethodPost: p.pluginDetails},
+		"catalog":        {http.MethodPost: p.catalogChange(true), http.MethodPut: p.catalogChange(false)},
 	}
 	return p
 }

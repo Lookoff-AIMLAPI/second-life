@@ -33,6 +33,8 @@ type fake struct {
 	epFault  error // of a list
 	keyFault error // of an endpoint key
 	asked    []ask
+
+	store PluginStore // nil: no plugin store
 }
 
 // ask is one list call with the key that would be sent.
@@ -75,6 +77,7 @@ func (f *fake) Test(_ context.Context, t route.Target) (int64, string, error) {
 	f.tested = t
 	return 12, "ok", f.fault
 }
+func (f *fake) Plugins() PluginStore    { return f.store }
 func (f *fake) DesktopConfigured() bool { return true }
 func (f *fake) ApplyDesktop() error     { f.applied++; return f.fault }
 func (f *fake) EndpointModels(_ context.Context, e route.Endpoint, key string) ([]Model, error) {
