@@ -73,7 +73,7 @@ func menuTitle(s, goos string) string {
 // localURL accepts only the bridge's own page on this machine.
 func localURL(raw string) bool {
 	u, err := url.Parse(raw)
-	if err != nil || u.Scheme != "http" || u.User != nil || u.Path != "/picker/" || u.RawQuery != "" {
+	if err != nil || u.Scheme != "http" || u.User != nil || (u.Path != "/picker/" && u.Path != "/picker/plugins") || u.RawQuery != "" {
 		return false
 	}
 	ip := net.ParseIP(u.Hostname())

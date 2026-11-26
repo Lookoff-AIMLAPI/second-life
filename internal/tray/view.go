@@ -39,6 +39,7 @@ const (
 	itemInstall
 	itemClaude
 	itemMCP
+	itemPlugins
 	itemDesktop
 	itemDesktopBack
 	itemLog
@@ -109,6 +110,7 @@ func buildView(s snapshot, now time.Time) view {
 	action(itemInstall, "Install Codex CLI", st.State == bridge.StateCodexMissing || st.CodexMissing, true)
 	action(itemClaude, "Open Claude", true, st.State == bridge.StateOn)
 	action(itemMCP, "Import MCP servers...", true, true)
+	action(itemPlugins, "Plugins...", true, st.State != bridge.StateOff && st.State != bridge.StateError)
 	action(itemDesktop, "Set up Claude Desktop", s.Desktop.Installed, st.State == bridge.StateOn && !s.DesktopBusy)
 	action(itemDesktopBack, "Switch Claude back to claude.ai", s.Desktop.Installed && s.Desktop.ThirdParty, !s.DesktopBusy)
 	action(itemLog, "Open log", true, true)

@@ -58,6 +58,8 @@ func (f *fakeController) Token() string { return testKey }
 
 func (f *fakeController) PickerURL() string { return "http://127.0.0.1:8787/picker/#x" }
 
+func (f *fakeController) PluginsURL() string { return "http://127.0.0.1:8787/picker/plugins#x" }
+
 func (f *fakeController) SetDesktop(func() bool, func() error) {}
 
 func (f *fakeController) Mapping() [][2]string { return nil }
@@ -502,7 +504,8 @@ func TestWidgetSendsOnlyChanges(t *testing.T) {
 
 func TestLocalURL(t *testing.T) {
 	for u, want := range map[string]bool{
-		"http://127.0.0.1:8787/picker/#abc": true, "http://[::1]:8787/picker/#abc": true,
+		"http://127.0.0.1:8787/picker/#abc": true, "http://[::1]:8787/picker/#abc": true, "http://127.0.0.1:8787/picker/plugins#abc": true,
+		"http://127.0.0.1/picker/plugins/x": false, "http://127.0.0.1/picker/pluginsx": false, "http://127.0.0.1/picker/app.js": false,
 		"": false, "https://127.0.0.1/picker/": false, "http://evil.example/picker/": false, "http://127.0.0.1.evil.example/picker/": false,
 		"http://user@127.0.0.1/picker/": false, "http://127.0.0.1/other": false, "http://127.0.0.1/picker/?x=1": false, "file:///picker/": false,
 	} {
@@ -510,4 +513,18 @@ func TestLocalURL(t *testing.T) {
 			t.Error(u)
 		}
 	}
+}
+
+func TestPluginsOpensItsLink(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		var opened []string
+		act := testActions()
+		act.openLocal = func(u string) error { opened = append(opened, u); return nil }
+		a := newApp(&fakeController{}, act, "")
+		a.plugins()
+		synctest.Wait()
+		if !slices.Equal(opened, []string{"http://127.0.0.1:8787/picker/plugins#x"}) {
+			t.Errorf("%q", opened)
+		}
+	})
 }
