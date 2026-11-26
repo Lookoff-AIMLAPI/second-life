@@ -3,7 +3,7 @@
 Run Claude Code and Claude Desktop on models you pick. A menu bar app for the Mac keeps a small server on your own computer. Claude talks to it as usual, and it passes each request to:
 
 - Codex models, through your ChatGPT sign-in and its limits
-- AIMLAPI models, through your AIMLAPI key and balance
+- [AIMLAPI](https://aimlapi.com/gh) models, through your AIMLAPI key and balance
 - any server that speaks OpenAI Chat Completions, OpenAI Responses or Anthropic Messages, such as OpenRouter, Ollama, LM Studio or vLLM
 
 You set this per Claude name. Opus can be one model and Haiku another.
@@ -61,7 +61,7 @@ The app is signed on the build machine but not notarized by Apple, which needs a
 | For | You need |
 |---|---|
 | Codex models | The Codex CLI and a ChatGPT plan. The installer and the menu offer OpenAI's own setup script |
-| AIMLAPI models | An AIMLAPI key |
+| AIMLAPI models | An [AIMLAPI](https://aimlapi.com/gh) key |
 | Your own server | Its address, and a key if it has one |
 | Claude in Terminal | Claude Code |
 | Claude with windows | Claude Desktop |
